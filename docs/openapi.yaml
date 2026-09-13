@@ -1,0 +1,5400 @@
+openapi: 3.1.0
+info:
+  title: Motiva API
+  version: 1.0.0
+  description: 'Проект контракта этапа 2 от 2026-09-13. Источники: BUSINESS 3.0, ENGINEERING 3.0, 03_AUTH, утверждённый
+    docs/stage-1.md с отдельными дополнениями Q01–Q09. Реализации нет. Все пути /api/v1, компания и инициатор только
+    из JWT. Все успешные DTO фиксированной формы, nullable-поля всегда присутствуют; application/json, ошибки application/problem+json.
+    Перечисления регистрозависимы. Неизвестные поля/дроби/выход за диапазон — 400. Допустимые границы календаря
+    Europe/Tallinn вычисляются до сравнения точных UTC моментов. PATCH application/json: отсутствующее поле не меняется,
+    массив заменяется целиком; null разрешён только явно. ETag настроек всегда читается из PostgreSQL. Все POST,
+    кроме progress-events и экономических операций с бессрочным бизнес-номером, требуют Idempotency-Key. Общие правила
+    и механизмы: docs/stage-2.md.'
+servers:
+- url: http://localhost:8080/api/v1
+  description: Изолированный локальный стенд; вне него HTTPS обязателен.
+security:
+- BearerAuth: []
+paths:
+  /employees:
+    get:
+      operationId: listEmployees
+      summary: Список Employee
+      description: 'Права: активный пользователь Admin своей компании.  Порции items+nextCursor, default 50/max
+        100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - employees
+      x-b-rules:
+      - B01
+      - B02
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeePage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createEmployee
+      summary: Создание Employee
+      description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
+        до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
+        /employees/{masterId}.'
+      tags:
+      - employees
+      x-b-rules:
+      - B01
+      - B02
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+  /employees/{masterId}:
+    get:
+      operationId: getEmployee
+      summary: Чтение Employee
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании.  Деталь с ETag читается
+        из PostgreSQL; тело и версия согласованы, старое тело кеша с новой ETag запрещено.'
+      tags:
+      - employees
+      x-b-rules:
+      - B01
+      - B02
+      - B05
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+    patch:
+      operationId: updateEmployee
+      summary: Изменение Employee
+      description: 'Права: активный пользователь Admin своей компании. '
+      tags:
+      - employees
+      x-b-rules:
+      - B01
+      - B02
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeePatch'
+  /resources:
+    get:
+      operationId: listResources
+      summary: Список Resource
+      description: 'Права: активный пользователь своей компании.  Порции items+nextCursor, default 50/max 100. Правила
+        устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - resources
+      x-b-rules:
+      - B06
+      - B07
+      x-rights: активный пользователь своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcePage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createResource
+      summary: Создание Resource
+      description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
+        до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
+        /resources/{id}.'
+      tags:
+      - resources
+      x-b-rules:
+      - B06
+      - B07
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceCreate'
+  /resources/{resourceId}:
+    get:
+      operationId: getResource
+      summary: Чтение Resource
+      description: 'Права: активный пользователь своей компании.  Деталь с ETag читается из PostgreSQL; тело и версия
+        согласованы, старое тело кеша с новой ETag запрещено.'
+      tags:
+      - resources
+      x-b-rules:
+      - B06
+      - B07
+      x-rights: активный пользователь своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/resourceId'
+    patch:
+      operationId: updateResource
+      summary: Изменение Resource
+      description: 'Права: активный пользователь Admin своей компании. '
+      tags:
+      - resources
+      x-b-rules:
+      - B06
+      - B07
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/resourceId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourcePatch'
+  /achievements:
+    get:
+      operationId: listAchievements
+      summary: Список Achievement
+      description: 'Права: активный пользователь своей компании.  Порции items+nextCursor, default 50/max 100. Правила
+        устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - achievements
+      x-b-rules:
+      - B29
+      - B30
+      x-rights: активный пользователь своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementPage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createAchievement
+      summary: Создание Achievement
+      description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
+        до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
+        /achievements/{id}.'
+      tags:
+      - achievements
+      x-b-rules:
+      - B29
+      - B30
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AchievementCreate'
+  /achievements/{achievementId}:
+    get:
+      operationId: getAchievement
+      summary: Чтение Achievement
+      description: 'Права: активный пользователь своей компании.  Деталь с ETag читается из PostgreSQL; тело и версия
+        согласованы, старое тело кеша с новой ETag запрещено.'
+      tags:
+      - achievements
+      x-b-rules:
+      - B29
+      - B30
+      x-rights: активный пользователь своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/achievementId'
+    patch:
+      operationId: updateAchievement
+      summary: Изменение Achievement
+      description: 'Права: активный пользователь Admin своей компании. '
+      tags:
+      - achievements
+      x-b-rules:
+      - B29
+      - B30
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/achievementId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AchievementPatch'
+  /purchase-systems:
+    get:
+      operationId: listPurchaseSystems
+      summary: Список PurchaseSystem
+      description: 'Права: активный пользователь своей компании.  Порции items+nextCursor, default 50/max 100. Правила
+        устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - purchase-systems
+      x-b-rules:
+      - B04
+      - B23
+      x-rights: активный пользователь своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseSystemPage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createPurchaseSystem
+      summary: Создание PurchaseSystem
+      description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
+        до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
+        /purchase-systems/{id}.'
+      tags:
+      - purchase-systems
+      x-b-rules:
+      - B04
+      - B23
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseSystemDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseSystemCreate'
+  /purchase-systems/{purchaseSystemId}:
+    get:
+      operationId: getPurchaseSystem
+      summary: Чтение PurchaseSystem
+      description: 'Права: активный пользователь своей компании.  Деталь с ETag читается из PostgreSQL; тело и версия
+        согласованы, старое тело кеша с новой ETag запрещено.'
+      tags:
+      - purchase-systems
+      x-b-rules:
+      - B04
+      - B23
+      x-rights: активный пользователь своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseSystemDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/purchaseSystemId'
+    patch:
+      operationId: updatePurchaseSystem
+      summary: Изменение PurchaseSystem
+      description: 'Права: активный пользователь Admin своей компании. '
+      tags:
+      - purchase-systems
+      x-b-rules:
+      - B04
+      - B23
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseSystemDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/purchaseSystemId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseSystemPatch'
+  /campaigns:
+    get:
+      operationId: listCampaigns
+      summary: Каталог кампаний
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Сотрудник видит Published текущего сезона
+        внутри срока и своей аудитории; архивная история доступна через результаты. Владелец/Admin также Draft и
+        Archived в своей области. Порции items+nextCursor, default 50/max 100. Правила устойчивого порядка и снимка
+        — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      - B10
+      - B11
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignPage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Season'
+    post:
+      operationId: createCampaign
+      summary: Черновик кампании
+      description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
+        до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
+        /campaigns/{campaignId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B03
+      - B08
+      - B09
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreate'
+  /campaigns/{campaignId}:
+    get:
+      operationId: getCampaign
+      summary: Кампания
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия.  Деталь с ETag читается из PostgreSQL; тело
+        и версия согласованы, старое тело кеша с новой ETag запрещено.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      - B11
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+    patch:
+      operationId: updateCampaign
+      summary: Настройки, публикация или архив кампании
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Изменение
+        ownerMasterId только Admin. Публикация проверяет весь граф без требования денег. Все изменения одного PATCH
+        атомарны.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B03
+      - B05
+      - B08
+      - B09
+      - B10
+      - B11
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignPatch'
+    delete:
+      operationId: deleteCampaign
+      summary: Удаление черновика
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft.
+        Логическое удаление сохраняет выделения, номера, остатки и историю; возврата/переноса нет. Published/Archived
+        — 409.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B18
+      - B24
+      - B28
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/IfMatch'
+  /campaigns/{campaignId}/streams:
+    get:
+      operationId: listStreams
+      summary: Список streams
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Для заданий дополнительно проверяется аудитория
+        задания. Архивные строки только владельцу/Admin; сотрудник сохраняет личные результаты. Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamPage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createStream
+      summary: Создание Stream
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
+        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamCreate'
+  /campaigns/{campaignId}/streams/{streamId}:
+    get:
+      operationId: getStream
+      summary: Чтение Stream
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Сотруднику дополнительно проверяются аудитория
+        задания, если читается Task, и неархивность родителей. Детальное чтение с ETag всегда из PostgreSQL, тело
+        и версия одного снимка. Деталь с ETag читается из PostgreSQL; тело и версия согласованы, старое тело кеша
+        с новой ETag запрещено.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+    patch:
+      operationId: updateStream
+      summary: Изменение Stream
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. '
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamPatch'
+    delete:
+      operationId: deleteStream
+      summary: Удаление настройки Stream
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании; сохраняется аудит. После публикации удаления нет.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B08
+      - B09
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/IfMatch'
+  /campaigns/{campaignId}/streams/{streamId}/tasks:
+    get:
+      operationId: listTasks
+      summary: Список tasks
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Для заданий дополнительно проверяется аудитория
+        задания. Архивные строки только владельцу/Admin; сотрудник сохраняет личные результаты. Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B11
+      - B12
+      - B13
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskPage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createTask
+      summary: Создание Task
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
+        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}/tasks/{taskId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B11
+      - B12
+      - B13
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+  /campaigns/{campaignId}/streams/{streamId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      summary: Чтение Task
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Сотруднику дополнительно проверяются аудитория
+        задания, если читается Task, и неархивность родителей. Детальное чтение с ETag всегда из PostgreSQL, тело
+        и версия одного снимка. Деталь с ETag читается из PostgreSQL; тело и версия согласованы, старое тело кеша
+        с новой ETag запрещено.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B11
+      - B12
+      - B13
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/taskId'
+    patch:
+      operationId: updateTask
+      summary: Изменение Task
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. '
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B11
+      - B12
+      - B13
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/taskId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskPatch'
+    delete:
+      operationId: deleteTask
+      summary: Удаление настройки Task
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании; сохраняется аудит. После публикации удаления нет.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B11
+      - B12
+      - B13
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/taskId'
+      - $ref: '#/components/parameters/IfMatch'
+  /campaigns/{campaignId}/streams/{streamId}/milestones:
+    get:
+      operationId: listMilestones
+      summary: Список milestones
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Для заданий дополнительно проверяется аудитория
+        задания. Архивные строки только владельцу/Admin; сотрудник сохраняет личные результаты. Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B29
+      - B30
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MilestonePage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createMilestone
+      summary: Создание Milestone
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
+        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}/milestones/{milestoneId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B29
+      - B30
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MilestoneDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MilestoneCreate'
+  /campaigns/{campaignId}/streams/{streamId}/milestones/{milestoneId}:
+    get:
+      operationId: getMilestone
+      summary: Чтение Milestone
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Сотруднику дополнительно проверяются аудитория
+        задания, если читается Task, и неархивность родителей. Детальное чтение с ETag всегда из PostgreSQL, тело
+        и версия одного снимка. Деталь с ETag читается из PostgreSQL; тело и версия согласованы, старое тело кеша
+        с новой ETag запрещено.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B29
+      - B30
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MilestoneDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/milestoneId'
+    patch:
+      operationId: updateMilestone
+      summary: Изменение Milestone
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. '
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B29
+      - B30
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MilestoneDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/milestoneId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MilestonePatch'
+    delete:
+      operationId: deleteMilestone
+      summary: Удаление настройки Milestone
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании; сохраняется аудит. После публикации удаления нет.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B29
+      - B30
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/milestoneId'
+      - $ref: '#/components/parameters/IfMatch'
+  /campaigns/{campaignId}/streams/{streamId}/challenges:
+    get:
+      operationId: listChallenges
+      summary: Список challenges
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Для заданий дополнительно проверяется аудитория
+        задания. Архивные строки только владельцу/Admin; сотрудник сохраняет личные результаты. Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B31
+      - B33
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengePage'
+          headers:
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createChallenge
+      summary: Создание Challenge
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
+        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}/challenges/{challengeId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B31
+      - B33
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeCreate'
+  /campaigns/{campaignId}/streams/{streamId}/challenges/{challengeId}:
+    get:
+      operationId: getChallenge
+      summary: Чтение Challenge
+      description: 'Права: активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания;
+        service не получает каталог без явно предусмотренного действия. Сотруднику дополнительно проверяются аудитория
+        задания, если читается Task, и неархивность родителей. Детальное чтение с ETag всегда из PostgreSQL, тело
+        и версия одного снимка. Деталь с ETag читается из PostgreSQL; тело и версия согласованы, старое тело кеша
+        с новой ETag запрещено.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B31
+      - B33
+      x-rights: 'активный сотрудник: доступный текущий каталог; владелец: своя кампания; Admin: своя компания; service
+        не получает каталог без явно предусмотренного действия'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+            As-Of:
+              $ref: '#/components/headers/AsOf'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/challengeId'
+    patch:
+      operationId: updateChallenge
+      summary: Изменение Challenge
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. '
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B31
+      - B33
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/challengeId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengePatch'
+    delete:
+      operationId: deleteChallenge
+      summary: Удаление настройки Challenge
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
+        кампании; сохраняется аудит. После публикации удаления нет.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B09
+      - B31
+      - B33
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/streamId'
+      - $ref: '#/components/parameters/challengeId'
+      - $ref: '#/components/parameters/IfMatch'
+  /integration-grants:
+    get:
+      operationId: listIntegrationGrants
+      summary: Разрешения интеграций
+      description: 'Права: активный пользователь Admin своей компании.  Порции items+nextCursor, default 50/max
+        100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - integration-grants
+      x-b-rules:
+      - B04
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationGrantPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+    post:
+      operationId: createIntegrationGrant
+      summary: Новое разрешение
+      description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
+        до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
+        /integration-grants/{grantId}.'
+      tags:
+      - integration-grants
+      x-b-rules:
+      - B04
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationGrantDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationGrantCreate'
+  /integration-grants/{grantId}:
+    get:
+      operationId: getIntegrationGrant
+      summary: Разрешение
+      description: 'Права: активный пользователь Admin своей компании.  Деталь с ETag читается из PostgreSQL; тело
+        и версия согласованы, старое тело кеша с новой ETag запрещено.'
+      tags:
+      - integration-grants
+      x-b-rules:
+      - B04
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationGrantDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/grantId'
+    patch:
+      operationId: updateIntegrationGrant
+      summary: Изменение ресурсов разрешения
+      description: 'Права: активный пользователь Admin своей компании. Отозванное разрешение не восстанавливается
+        этим PATCH; новое создаётся отдельно.'
+      tags:
+      - integration-grants
+      x-b-rules:
+      - B04
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationGrantDto'
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/grantId'
+      - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationGrantPatch'
+    delete:
+      operationId: deleteIntegrationGrant
+      summary: Отзыв разрешения
+      description: 'Права: активный пользователь Admin своей компании. Транзакционно отозвать; аудит/история остаются.
+        Эффект виден всем последующим обращениям двух API.'
+      tags:
+      - integration-grants
+      x-b-rules:
+      - B04
+      - B05
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+        '412':
+          $ref: '#/components/responses/412'
+        '428':
+          $ref: '#/components/responses/428'
+      parameters:
+      - $ref: '#/components/parameters/grantId'
+      - $ref: '#/components/parameters/IfMatch'
+  /campaigns/{campaignId}/budgets:
+    get:
+      operationId: listCampaignBudgets
+      summary: Остатки и итоги бюджетов
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании.  Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B18
+      - B19
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/ResourceFilter'
+  /campaigns/{campaignId}/budgets/{resourceId}:
+    get:
+      operationId: getCampaignBudget
+      summary: Бюджет одного ресурса
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. '
+      tags:
+      - campaigns
+      x-b-rules:
+      - B18
+      - B19
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BudgetDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/resourceId'
+  /campaigns/{campaignId}/allocations:
+    get:
+      operationId: listAllocations
+      summary: История выделений
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Включает Posted
+        и Declined, включая удалённый Draft при сохраняющихся правах. Порции items+nextCursor, default 50/max 100.
+        Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B18
+      - B24
+      - B28
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+    post:
+      operationId: createAllocation
+      summary: Выделение бюджета
+      description: 'Права: активный пользователь Admin своей компании. Draft/Published до конца кампании и сезона,
+        включая будущее/до старта. Архив ресурса или недействующее состояние/время кампании — сохранённый Declined.
+        Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала проверяет текущие права/активность,
+        затем исходный результат; не переигрывает изменившиеся условия. Смена существенных данных — 409. Location:
+        /operations/{operationId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B07
+      - B18
+      - B19
+      - B24
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '201':
+          description: Создан неизменяемый результат Posted или Declined; читать status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllocationCreate'
+  /campaigns/{campaignId}/manual-rewards:
+    post:
+      operationId: createManualReward
+      summary: Ручное начисление
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании либо service
+        с ManualReward grant этой кампании и ресурса. Новый получатель активен, в текущей аудитории кампании; прошлое
+        выполнение не требуется, аудитория задания не проверяется. Кампания Published в [start,end). При текущих
+        правах бизнес-непригодность аудитории/срока сохраняется как Declined. Бессрочный номер B16/B24, технический
+        Idempotency-Key не требуется. Повтор сначала проверяет текущие права/активность, затем исходный результат;
+        не переигрывает изменившиеся условия. Смена существенных данных — 409. Location: /operations/{operationId}.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B04
+      - B05
+      - B07
+      - B19
+      - B21
+      - B24
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании либо service с ManualReward
+        grant этой кампании и ресурса
+      responses:
+        '201':
+          description: Создан неизменяемый результат Posted или Declined; читать status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualRewardCreate'
+  /wallets/{masterId}:
+    get:
+      operationId: getWallet
+      summary: Личный кошелёк
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании. Нет service/права
+        владельца на чужой полный кошелёк. Балансы отдельной коллекцией.'
+      tags:
+      - wallets
+      x-b-rules:
+      - B01
+      - B02
+      - B22
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+  /wallets/{masterId}/balances:
+    get:
+      operationId: listWalletBalances
+      summary: Балансы ресурсов
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании. Все ресурсы компании,
+        включая архивные; отсутствующий внутренний счёт означает 0. Всегда чтение PostgreSQL. Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - wallets
+      x-b-rules:
+      - B06
+      - B07
+      - B22
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalancePage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/ResourceFilter'
+  /wallets/{masterId}/operations:
+    get:
+      operationId: listWalletOperations
+      summary: Результаты операций кошелька
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании.  Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - wallets
+      x-b-rules:
+      - B22
+      - B24
+      - B28
+      - B34
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+  /wallets/{masterId}/movements:
+    get:
+      operationId: listWalletMovements
+      summary: Проведённые движения
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании.  Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - wallets
+      x-b-rules:
+      - B22
+      - B28
+      - B34
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+  /wallets/{masterId}/spends:
+    post:
+      operationId: createSpend
+      summary: Трата ресурса
+      description: 'Права: активный пользователь только со своего masterId; service с текущим Spend grant системы
+        и ресурса. Admin не получает право тратить чужое по роли. Получатель активен, система зарегистрирована и
+        принимает ресурс. Нехватка — Declined/InsufficientBalance, архив — Declined/ResourceUnavailable; отдельного
+        согласия нет. Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала проверяет
+        текущие права/активность, затем исходный результат; не переигрывает изменившиеся условия. Смена существенных
+        данных — 409. Location: /operations/{operationId}.'
+      tags:
+      - wallets
+      x-b-rules:
+      - B02
+      - B04
+      - B05
+      - B07
+      - B22
+      - B23
+      - B24
+      x-rights: активный пользователь только со своего masterId; service с текущим Spend grant системы и ресурса
+      responses:
+        '201':
+          description: Создан неизменяемый результат Posted или Declined; читать status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpendCreate'
+  /operations:
+    get:
+      operationId: listOperations
+      summary: Операции компании
+      description: 'Права: активный пользователь Admin своей компании.  Порции items+nextCursor, default 50/max
+        100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - operations
+      x-b-rules:
+      - B02
+      - B28
+      - B34
+      x-rights: активный пользователь Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+      - $ref: '#/components/parameters/CampaignFilter'
+      - $ref: '#/components/parameters/MasterFilter'
+  /operations/{operationId}:
+    get:
+      operationId: getOperation
+      summary: Неизменяемый результат операции
+      description: 'Права: сотрудник: собственная операция; текущий владелец: начисление/выделение его кампании;
+        Admin: своя компания; service: собственные разрешённые результаты либо операции его системы покупок в текущем
+        grant. Историческое чтение не требует активности получателя у Admin/владельца/service; текущая активность
+        самого пользователя и область чтения проверяются. Declined также ресурс.'
+      tags:
+      - operations
+      x-b-rules:
+      - B02
+      - B04
+      - B24
+      - B28
+      - B34
+      x-rights: 'сотрудник: собственная операция; текущий владелец: начисление/выделение его кампании; Admin: своя
+        компания; service: собственные разрешённые результаты либо операции его системы покупок в текущем grant'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/operationId'
+  /operations/{operationId}/reversals:
+    get:
+      operationId: listReversals
+      summary: Результаты запросов отмены
+      description: 'Права: сотрудник: собственная операция; текущий владелец: начисление/выделение его кампании;
+        Admin: своя компания; service: собственные разрешённые результаты либо операции его системы покупок в текущем
+        grant.  Порции items+nextCursor, default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - operations
+      x-b-rules:
+      - B25
+      - B28
+      x-rights: 'сотрудник: собственная операция; текущий владелец: начисление/выделение его кампании; Admin: своя
+        компания; service: собственные разрешённые результаты либо операции его системы покупок в текущем grant'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/operationId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+    post:
+      operationId: createReversal
+      summary: Полная отмена
+      description: 'Права: начисление: текущий владелец исходной кампании или Admin; трата: Admin либо service с
+        действующим Spend grant той же системы/ресурса; заблокированный получатель: только Admin. Запрет сотруднику,
+        частичной отмене, отмене отмены/выделения. Непроведённый допустимый оригинал — Declined/OriginalNotPosted,
+        повторная отмена — Declined/AlreadyReversed, недостаток одного баланса пакета — Declined/InsufficientBalance.
+        Новый номер после неудачи допустим. Архив и конец сезона не препятствуют. Location содержит ID новой операции
+        отмены, не ID оригинала. Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала
+        проверяет текущие права/активность, затем исходный результат; не переигрывает изменившиеся условия. Смена
+        существенных данных — 409. Location: /operations/{operationId}.'
+      tags:
+      - operations
+      x-b-rules:
+      - B05
+      - B07
+      - B24
+      - B25
+      - B26
+      - B27
+      x-rights: 'начисление: текущий владелец исходной кампании или Admin; трата: Admin либо service с действующим
+        Spend grant той же системы/ресурса; заблокированный получатель: только Admin'
+      responses:
+        '201':
+          description: Создан неизменяемый результат Posted или Declined; читать status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/operationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReversalCreate'
+  /purchase-systems/{purchaseSystemId}/operations:
+    get:
+      operationId: listPurchaseSystemOperations
+      summary: Собственная история системы покупок
+      description: 'Права: Admin или service с текущим Spend grant этой системы, только разрешённые ресурсы. Только
+        её Spend и Reversal, включая сотрудником инициированные траты; полный кошелёк не доступен. Порции items+nextCursor,
+        default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - purchase-systems
+      x-b-rules:
+      - B04
+      - B23
+      - B27
+      - B28
+      x-rights: Admin или service с текущим Spend grant этой системы, только разрешённые ресурсы
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/purchaseSystemId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+  /progress-events:
+    post:
+      operationId: createProgressEvent
+      summary: Подтверждённое событие
+      description: 'Права: только service с текущим Progress grant кампании задания. Аномалия общих часов ниже уже
+        финализированной границы стрима — временный 503 без занятия номера. Принятое событие с отказом награды —
+        201 и rewardDecision=Declined. Непринятое событие номер не занимает. На replay активность получателя/grant
+        проверяются, аудитория/период/архив заново не вычисляются. Бессрочный номер B16/B24, технический Idempotency-Key
+        не требуется. Повтор сначала проверяет текущие права/активность, затем исходный результат; не переигрывает
+        изменившиеся условия. Смена существенных данных — 409. Location: /progress-events/{eventId}.'
+      tags:
+      - progress-events
+      x-b-rules:
+      - B04
+      - B05
+      - B10
+      - B11
+      - B13
+      - B14
+      - B15
+      - B16
+      - B17
+      - B20
+      - B29
+      - B30
+      - B31
+      x-rights: только service с текущим Progress grant кампании задания
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressEventDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressEventCreate'
+    get:
+      operationId: listProgressEvents
+      summary: История событий
+      description: 'Права: Admin либо service: только свой subject и кампании с действующим Progress grant.  Порции
+        items+nextCursor, default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - progress-events
+      x-b-rules:
+      - B04
+      - B14
+      - B16
+      - B34
+      x-rights: 'Admin либо service: только свой subject и кампании с действующим Progress grant'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressEventPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/CampaignFilter'
+      - $ref: '#/components/parameters/TaskFilter'
+      - $ref: '#/components/parameters/MasterFilter'
+  /progress-events/{eventId}:
+    get:
+      operationId: getProgressEvent
+      summary: Результат принятого события
+      description: 'Права: сотрудник: собственное событие; текущий владелец исходной кампании; Admin; service: собственное
+        событие с текущим Progress grant. '
+      tags:
+      - progress-events
+      x-b-rules:
+      - B14
+      - B16
+      - B17
+      - B34
+      x-rights: 'сотрудник: собственное событие; текущий владелец исходной кампании; Admin; service: собственное
+        событие с текущим Progress grant'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressEventDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/eventId'
+  /employees/{masterId}/task-results:
+    get:
+      operationId: listOwnTaskResults
+      summary: Личные task-results
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании. Собственная история
+        после потери аудитории сохраняется. Прогресс фильтруется по началу фактического периода; события/выдачи
+        — по времени записи. Архив не скрывает историю. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - employees
+      x-b-rules:
+      - B13
+      - B14
+      - B15
+      - B34
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResultPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/CampaignFilter'
+      - $ref: '#/components/parameters/TaskFilter'
+  /employees/{masterId}/stream-results:
+    get:
+      operationId: listOwnStreamResults
+      summary: Личные stream-results
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании. Собственная история
+        после потери аудитории сохраняется. Прогресс фильтруется по началу фактического периода; события/выдачи
+        — по времени записи. Архив не скрывает историю. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - employees
+      x-b-rules:
+      - B29
+      - B34
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamResultPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Season'
+      - $ref: '#/components/parameters/CampaignFilter'
+      - $ref: '#/components/parameters/StreamFilter'
+  /employees/{masterId}/achievement-awards:
+    get:
+      operationId: listOwnAchievementAwards
+      summary: Личные achievement-awards
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании. Собственная история
+        после потери аудитории сохраняется. Прогресс фильтруется по началу фактического периода; события/выдачи
+        — по времени записи. Архив не скрывает историю. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - employees
+      x-b-rules:
+      - B29
+      - B30
+      - B34
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementAwardPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Season'
+      - $ref: '#/components/parameters/CampaignFilter'
+      - $ref: '#/components/parameters/StreamFilter'
+  /employees/{masterId}/progress-events:
+    get:
+      operationId: listOwnEmployeeProgressEvents
+      summary: Личные progress-events
+      description: 'Права: активный сотрудник — только сам; Admin — сотрудник своей компании. Собственная история
+        после потери аудитории сохраняется. Прогресс фильтруется по началу фактического периода; события/выдачи
+        — по времени записи. Архив не скрывает историю. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - employees
+      x-b-rules:
+      - B14
+      - B16
+      - B34
+      x-rights: активный сотрудник — только сам; Admin — сотрудник своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressEventPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/masterId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/CampaignFilter'
+      - $ref: '#/components/parameters/TaskFilter'
+  /campaigns/{campaignId}/operations:
+    get:
+      operationId: listCampaignOperations
+      summary: 'Результаты кампании: operations'
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только данные
+        этой кампании, включая историческую/удалённый Draft. Чужие покупки/балансы не присоединяются; достижения
+        показывают фактическое место первичной выдачи. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B18
+      - B19
+      - B21
+      - B28
+      - B34
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+      - $ref: '#/components/parameters/MasterFilter'
+  /campaigns/{campaignId}/task-results:
+    get:
+      operationId: listCampaignTaskResults
+      summary: 'Результаты кампании: task-results'
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только данные
+        этой кампании, включая историческую/удалённый Draft. Чужие покупки/балансы не присоединяются; достижения
+        показывают фактическое место первичной выдачи. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B13
+      - B15
+      - B34
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResultPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/MasterFilter'
+      - $ref: '#/components/parameters/TaskFilter'
+  /campaigns/{campaignId}/stream-results:
+    get:
+      operationId: listCampaignStreamResults
+      summary: 'Результаты кампании: stream-results'
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только данные
+        этой кампании, включая историческую/удалённый Draft. Чужие покупки/балансы не присоединяются; достижения
+        показывают фактическое место первичной выдачи. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B29
+      - B34
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamResultPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Season'
+      - $ref: '#/components/parameters/MasterFilter'
+      - $ref: '#/components/parameters/StreamFilter'
+  /campaigns/{campaignId}/achievement-awards:
+    get:
+      operationId: listCampaignAchievementAwards
+      summary: 'Результаты кампании: achievement-awards'
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только данные
+        этой кампании, включая историческую/удалённый Draft. Чужие покупки/балансы не присоединяются; достижения
+        показывают фактическое место первичной выдачи. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B29
+      - B30
+      - B34
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementAwardPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Season'
+      - $ref: '#/components/parameters/MasterFilter'
+      - $ref: '#/components/parameters/StreamFilter'
+  /campaigns/{campaignId}/progress-events:
+    get:
+      operationId: listCampaignProgressEvents
+      summary: 'Результаты кампании: progress-events'
+      description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только данные
+        этой кампании, включая историческую/удалённый Draft. Чужие покупки/балансы не присоединяются; достижения
+        показывают фактическое место первичной выдачи. Порции items+nextCursor, default 50/max 100. Правила устойчивого
+        порядка и снимка — stage-2 §5.'
+      tags:
+      - campaigns
+      x-b-rules:
+      - B14
+      - B16
+      - B34
+      x-rights: текущий активный владелец этой кампании или активный Admin своей компании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressEventPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/campaignId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/MasterFilter'
+      - $ref: '#/components/parameters/TaskFilter'
+  /leaderboards/{challengeId}:
+    get:
+      operationId: getLeaderboard
+      summary: Первые N участников
+      description: 'Права: активный пользователь: текущая аудитория кампании в текущем сезоне даже после конца/архива;
+        после сезона собственная строка данного челленджа (включая 0); текущий владелец/Admin имеют доступ своей
+        области; Draft не открыт обычному участнику; владелец/Admin читают свою черновую конфигурацию и пустой результат;
+        service не допускается. current permissions из PostgreSQL, cache только score/rank. Поля строки строго masterId/score/rank.
+        asOf не старше 5 секунд для Live.'
+      tags:
+      - leaderboards
+      x-b-rules:
+      - B05
+      - B11
+      - B31
+      - B32
+      - B33
+      x-rights: 'активный пользователь: текущая аудитория кампании в текущем сезоне даже после конца/архива; после
+        сезона собственная строка данного челленджа (включая 0); текущий владелец/Admin имеют доступ своей области;
+        Draft не открыт обычному участнику; владелец/Admin читают свою черновую конфигурацию и пустой результат;
+        service не допускается'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/challengeId'
+      - $ref: '#/components/parameters/Limit'
+  /leaderboards/{challengeId}/positions/me:
+    get:
+      operationId: getOwnPosition
+      summary: Собственное место
+      description: 'Права: активный пользователь: текущая аудитория кампании в текущем сезоне даже после конца/архива;
+        после сезона собственная строка данного челленджа (включая 0); текущий владелец/Admin имеют доступ своей
+        области; Draft не открыт обычному участнику; владелец/Admin читают свою черновую конфигурацию и пустой результат;
+        service не допускается. masterId исключительно из JWT. Права одинаковы с top N; свежесть явно asOf, две
+        независимые выдачи могут иметь разные asOf.'
+      tags:
+      - leaderboards
+      x-b-rules:
+      - B05
+      - B31
+      - B32
+      - B33
+      x-rights: 'активный пользователь: текущая аудитория кампании в текущем сезоне даже после конца/архива; после
+        сезона собственная строка данного челленджа (включая 0); текущий владелец/Admin имеют доступ своей области;
+        Draft не открыт обычному участнику; владелец/Admin читают свою черновую конфигурацию и пустой результат;
+        service не допускается'
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnPositionDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/challengeId'
+  /exports:
+    post:
+      operationId: createExport
+      summary: Заказ выписки
+      description: 'Права: активный сотрудник: своя; активный Admin: сотрудник своей компании или компания. Создаёт
+        Pending и durable job одной транзакцией; состав ещё не фиксируется. Владелец по роли не заказывает чужую
+        выписку. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
+        исходную 201 и представление, GET — текущее. Location: /exports/{exportId}.'
+      tags:
+      - exports
+      x-b-rules:
+      - B02
+      - B35
+      - B36
+      - B37
+      x-rights: 'активный сотрудник: своя; активный Admin: сотрудник своей компании или компания'
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportCreate'
+    get:
+      operationId: listExports
+      summary: Собственные запросы выписок
+      description: 'Права: только исходный requester subject+actorType в своей компании с текущими правами на исходный
+        scope; активный профиль для user; другой Admin не является заказчиком. Фильтр from/to относится к createdAtUtc
+        запроса; не к запрошенному интервалу. Включает Deleted. Потерянные права на чужого сотрудника/компанию не
+        открывают прежний запрос. Порции items+nextCursor, default 50/max 100. Правила устойчивого порядка и снимка
+        — stage-2 §5.'
+      tags:
+      - exports
+      x-b-rules:
+      - B35
+      - B36
+      - B37
+      x-rights: только исходный requester subject+actorType в своей компании с текущими правами на исходный scope;
+        активный профиль для user; другой Admin не является заказчиком
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/ResourceFilter'
+  /exports/{exportId}:
+    get:
+      operationId: getExport
+      summary: Состояние и история запроса
+      description: 'Права: только исходный requester subject+actorType в своей компании с текущими правами на исходный
+        scope; активный профиль для user; другой Admin не является заказчиком. '
+      tags:
+      - exports
+      x-b-rules:
+      - B35
+      - B36
+      - B37
+      x-rights: только исходный requester subject+actorType в своей компании с текущими правами на исходный scope;
+        активный профиль для user; другой Admin не является заказчиком
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/exportId'
+    delete:
+      operationId: deleteExport
+      summary: Удаление выписки
+      description: 'Права: только исходный requester subject+actorType в своей компании с текущими правами на исходный
+        scope; активный профиль для user; другой Admin не является заказчиком. Без If-Match и Idempotency-Key. Повтор
+        204. Сразу запрещает новые ссылки; история запроса сохраняется, worker не может восстановить Ready. Физическая
+        очистка асинхронна.'
+      tags:
+      - exports
+      x-b-rules:
+      - B36
+      - B37
+      x-rights: только исходный requester subject+actorType в своей компании с текущими правами на исходный scope;
+        активный профиль для user; другой Admin не является заказчиком
+      responses:
+        '204':
+          description: Успех.
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/exportId'
+  /exports/{exportId}/download-links:
+    post:
+      operationId: createDownloadLink
+      summary: Краткосрочная ссылка
+      description: 'Права: только исходный requester subject+actorType в своей компании с текущими правами на исходный
+        scope; активный профиль для user; другой Admin не является заказчиком. Только Ready; иначе 409/ExportNotReady.
+        Deleted проверяется после доступа, до idempotency replay: 409/ExportDeleted. URL подписан на 60 секунд,
+        тот же key не продлевает срок. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный
+        replay возвращает исходную 201 и представление, GET — текущее. Location: /exports/{exportId}/download-links/{linkId}.'
+      tags:
+      - exports
+      x-b-rules:
+      - B35
+      - B36
+      - B37
+      x-rights: только исходный requester subject+actorType в своей компании с текущими правами на исходный scope;
+        активный профиль для user; другой Admin не является заказчиком
+      responses:
+        '201':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadLinkDto'
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/exportId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadLinkCreate'
+  /exports/{exportId}/download-links/{linkId}:
+    get:
+      operationId: getDownloadLink
+      summary: Ранее выданная ссылка
+      description: 'Права: только исходный requester subject+actorType в своей компании с текущими правами на исходный
+        scope; активный профиль для user; другой Admin не является заказчиком. Не создаёт и не продлевает разрешение.
+        Deleted — 409 после доступа, иначе тот же URL, возможно истёкший. Прямой GET URL в S3 возвращает text/csv;
+        точный CSV-контракт stage-2 §6.'
+      tags:
+      - exports
+      x-b-rules:
+      - B37
+      x-rights: только исходный requester subject+actorType в своей компании с текущими правами на исходный scope;
+        активный профиль для user; другой Admin не является заказчиком
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadLinkDto'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/exportId'
+      - $ref: '#/components/parameters/linkId'
+  /audit-records:
+    get:
+      operationId: listAuditRecords
+      summary: История изменений
+      description: 'Права: Admin своей компании; текущий владелец только при campaignId своей кампании. Владелец
+        без campaignId — 403; чужой campaignId — 404. Права/профили всей компании доступны только Admin. Порции
+        items+nextCursor, default 50/max 100. Правила устойчивого порядка и снимка — stage-2 §5.'
+      tags:
+      - audit-records
+      x-b-rules:
+      - B05
+      - B09
+      - B18
+      - B28
+      x-rights: Admin своей компании; текущий владелец только при campaignId своей кампании
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditRecordPage'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '409':
+          $ref: '#/components/responses/409'
+        '503':
+          $ref: '#/components/responses/503'
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/From'
+      - $ref: '#/components/parameters/To'
+      - $ref: '#/components/parameters/CampaignFilter'
+  /health/live:
+    get:
+      operationId: getLiveness
+      summary: Жив ли процесс
+      description: 'Права: без JWT, без внутренних деталей. Не падает лишь от недоступности зависимостей.'
+      tags:
+      - health
+      x-b-rules: []
+      x-rights: без JWT, без внутренних деталей
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDto'
+      security: []
+  /health/ready:
+    get:
+      operationId: getReadiness
+      summary: Готовность основных операций
+      description: 'Права: без JWT, без внутренних деталей. PostgreSQL недоступен — 503 Problem; Valkey/S3 не блокируют
+        основной учёт.'
+      tags:
+      - health
+      x-b-rules: []
+      x-rights: без JWT, без внутренних деталей
+      responses:
+        '200':
+          description: Успех.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDto'
+        '503':
+          $ref: '#/components/responses/503'
+      security: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: '03_AUTH: HS256; iss motiva-benchmark, aud motiva-api, exp/nbf, skew 30 s; companyId UUID, sub,
+        actorType user/service, для user masterId Int32 и Employee/[Admin]. Grants/owner/activity в PostgreSQL;
+        service не имеет личного кошелька.'
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Размер порции. Для top N — число первых участников.
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: Непрозрачный подписанный курсор, привязан к компании, читателю и фильтрам. Нельзя менять фильтры
+        при продолжении.
+    From:
+      name: from
+      in: query
+      schema: &id001
+        type: string
+        format: date-time
+        pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?(Z|[+-]\d{2}:\d{2})$
+        description: RFC 3339 с обязательным offset; точность до 100 нс, без округления. В ответе UTC Z.
+      description: Включённое начало по времени записи/движения; совместно с to должно быть from<to.
+    To:
+      name: to
+      in: query
+      schema: *id001
+      description: Исключённый конец.
+    ResourceFilter:
+      name: resourceId
+      in: query
+      schema: &id002
+        type: string
+        format: uuid
+    Season:
+      name: season
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9998
+    CampaignFilter:
+      name: campaignId
+      in: query
+      schema: *id002
+    StreamFilter:
+      name: streamId
+      in: query
+      schema: *id002
+    TaskFilter:
+      name: taskId
+      in: query
+      schema: *id002
+    MasterFilter:
+      name: masterId
+      in: query
+      schema: &id003
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 2147483647
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema:
+        type: string
+        pattern: ^"v[1-9][0-9]*"$
+      description: Strong ETag текущей изменяемой настройки. Отсутствие 428, устаревший 412; проверяется после доступа.
+        Только одна версия, wildcard/weak — 400.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+        pattern: ^[\x21-\x7E]+$
+      description: Технический ASCII key, хранение успешного ответа не менее 24 ч. Scope company+verified initiator+operation/target+key.
+        Совпадающий запрос возвращает исходные ID/201/DTO/Location; изменённый 409. Текущий доступ проверяется первым.
+        Не заменяет бессрочные бизнес-номера.
+    resourceId:
+      name: resourceId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    achievementId:
+      name: achievementId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    campaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    streamId:
+      name: streamId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    taskId:
+      name: taskId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    milestoneId:
+      name: milestoneId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    challengeId:
+      name: challengeId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    purchaseSystemId:
+      name: purchaseSystemId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    grantId:
+      name: grantId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    eventId:
+      name: eventId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    operationId:
+      name: operationId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    exportId:
+      name: exportId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    linkId:
+      name: linkId
+      in: path
+      required: true
+      schema: *id002
+      description: Объект проверяется внутри компании JWT и указанного родителя; чужой/недоступный — 404.
+    masterId:
+      name: masterId
+      in: path
+      required: true
+      schema: *id003
+      description: Профиль внутри компании JWT. Личные действия пользователя только при совпадении с masterId JWT;
+        чужой кошелёк/история — 404.
+  headers:
+    Location:
+      description: Канонический URI созданного ресурса; в том числе для сохранённого Declined. При replay тот же.
+      schema:
+        type: string
+    ETag:
+      description: Strong версия настройки вида "v7". Для PATCH/DELETE передать If-Match.
+      schema:
+        type: string
+        pattern: ^"v[1-9][0-9]*"$
+    AsOf:
+      description: 'asOf: UTC момент снимка каталога; старше 30 секунд не используется. Позднее заполнение кеша
+        не обновляет этот момент.'
+      schema: *id001
+    RetryAfter:
+      description: Ограниченная задержка перед повтором того же номера/key.
+      schema:
+        type: integer
+        minimum: 1
+  responses:
+    '400':
+      description: Неверные поля/границы/переполнение; номер не занят.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '401':
+      description: JWT отсутствует или не прошёл договор 03_AUTH.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '403':
+      description: Нет текущих полномочий либо активного профиля.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '404':
+      description: Объект отсутствует, чужой компании/родителя либо недоступен как персональный.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '409':
+      description: Конфликт номера/key, кода, состояния, готовности либо удалённая выписка.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '412':
+      description: Устаревший If-Match.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '428':
+      description: Отсутствует обязательный If-Match.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '503':
+      description: Временная недоступность или исчерпано ограниченное ожидание конкурирующего запроса. Повторять
+        тот же номер/key; commit мог состояться.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+  schemas:
+    ActorDto:
+      type: object
+      additionalProperties: false
+      required:
+      - subject
+      - actorType
+      - masterId
+      properties:
+        subject:
+          type: string
+          minLength: 1
+        actorType:
+          type: string
+          enum:
+          - user
+          - service
+        masterId:
+          anyOf:
+          - type: integer
+            format: int32
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+    Audience:
+      type: object
+      additionalProperties: false
+      required:
+      - any
+      - all
+      - none
+      properties:
+        any:
+          type: array
+          items: &id004
+            type: string
+            pattern: ^[a-z0-9-]{1,32}$
+          uniqueItems: true
+        all:
+          type: array
+          items: *id004
+          uniqueItems: true
+        none:
+          type: array
+          items: *id004
+          uniqueItems: true
+      description: Пустые наборы не ограничивают. Все три условия должны выполняться; none имеет запрещающий эффект.
+    ResourceAmount:
+      type: object
+      additionalProperties: false
+      required:
+      - resourceId
+      - amount
+      properties:
+        resourceId: *id002
+        amount: &id013
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1000000000
+    RewardDecisionDto:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - operationId
+      - declineCode
+      properties:
+        status:
+          type: string
+          enum:
+          - NotPlanned
+          - Posted
+          - Declined
+        operationId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        declineCode:
+          anyOf:
+          - type: string
+            enum:
+            - InsufficientBudget
+            - InsufficientBalance
+            - ResourceUnavailable
+            - CampaignUnavailable
+            - RecipientOutsideAudience
+            - OriginalNotPosted
+            - AlreadyReversed
+          - type: 'null'
+      description: 'На завершении: NotPlanned для пустого пакета; Posted либо Declined для непустого. ResourceUnavailable
+        приоритетнее InsufficientBudget. До завершения rewardDecision=null в событии; после повторного уникального
+        события решение не создаётся.'
+    FieldError:
+      type: object
+      additionalProperties: false
+      required:
+      - field
+      - code
+      - message
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+    Problem:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
+      - code
+      - traceId
+      - errors
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          enum:
+          - InvalidInput
+          - Unauthenticated
+          - Forbidden
+          - NotFound
+          - NumberConflict
+          - IdempotencyConflict
+          - StateConflict
+          - CodeConflict
+          - ExportDeleted
+          - ExportNotReady
+          - PreconditionRequired
+          - PreconditionFailed
+          - TemporarilyUnavailable
+        traceId:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+      description: Всегда application/problem+json, одна форма. errors=[] при отсутствии ошибок отдельных полей.
+        Секретов, JWT и signed URLs нет.
+    EmployeeDto:
+      type: object
+      additionalProperties: false
+      required:
+      - masterId
+      - companyId
+      - active
+      - tags
+      - walletId
+      properties:
+        masterId: *id003
+        companyId: *id002
+        active: &id005
+          type: boolean
+        tags:
+          type: array
+          items: *id004
+          uniqueItems: true
+        walletId: *id002
+    EmployeeCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - masterId
+      - active
+      - tags
+      properties:
+        masterId: *id003
+        active: *id005
+        tags:
+          type: array
+          items: *id004
+          uniqueItems: true
+    EmployeePatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        active: *id005
+        tags:
+          type: array
+          items: *id004
+          uniqueItems: true
+      description: Хотя бы одно поле; masterId и владелец кошелька неизменяемы.
+      minProperties: 1
+    ResourceDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - status
+      properties:
+        id: *id002
+        code: &id007
+          type: string
+          pattern: ^[A-Z0-9_-]{1,40}$
+        name: &id006
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum:
+          - Active
+          - Archived
+    ResourceCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      properties:
+        code: &id008
+          type: string
+          pattern: ^ *[A-Za-z0-9_-]{1,40} *$
+          description: Удалить только крайние U+0020, затем uppercase ASCII; проверяется длина нормализованного
+            кода. Нули внутри значимы.
+        name: *id006
+    ResourcePatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id006
+        status:
+          type: string
+          enum:
+          - Archived
+      description: Хотя бы одно поле. Архив необратим; кода в изменении нет.
+      minProperties: 1
+    AchievementDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - description
+      properties:
+        id: *id002
+        code: *id007
+        name: *id006
+        description: &id009
+          type: string
+          maxLength: 2000
+    AchievementCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      - description
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+    AchievementPatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id006
+        description: *id009
+      minProperties: 1
+    CampaignCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      - description
+      - ownerMasterId
+      - season
+      - startsAt
+      - endsAt
+      - audience
+      - resourceIds
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+        ownerMasterId: *id003
+        season: &id010
+          type: integer
+          minimum: 1
+          maximum: 9998
+        startsAt: *id001
+        endsAt: *id001
+        audience: &id011
+          $ref: '#/components/schemas/Audience'
+        resourceIds: &id012
+          type: array
+          items: *id002
+          uniqueItems: true
+    CampaignPatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+        ownerMasterId: *id003
+        season: *id010
+        startsAt: *id001
+        endsAt: *id001
+        audience: *id011
+        resourceIds: *id012
+        status:
+          type: string
+          enum:
+          - Published
+          - Archived
+      description: Хотя бы одно поле. После публикации только name/description/audience/ownerMasterId и переход
+        в Archived. ownerMasterId изменяет только Admin. Все остальные поля только в Draft; конец исключён, startsAt<endsAt,
+        внутри сезона Tallinn.
+      minProperties: 1
+    CampaignDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - code
+      - name
+      - description
+      - ownerMasterId
+      - season
+      - startsAt
+      - endsAt
+      - audience
+      - resourceIds
+      - status
+      properties:
+        id: *id002
+        code: *id007
+        name: *id006
+        description: *id009
+        ownerMasterId: *id003
+        season: *id010
+        startsAt: *id001
+        endsAt: *id001
+        audience: *id011
+        resourceIds: *id012
+        status:
+          type: string
+          enum:
+          - Draft
+          - Published
+          - Archived
+    StreamCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      - description
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+    StreamPatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+        status:
+          type: string
+          enum:
+          - Archived
+      description: Код только в Draft; после публикации name/description и необратимый архив.
+      minProperties: 1
+    StreamDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - campaignId
+      - code
+      - name
+      - description
+      - status
+      properties:
+        id: *id002
+        campaignId: *id002
+        code: *id007
+        name: *id006
+        description: *id009
+        status:
+          type: string
+          enum:
+          - Active
+          - Archived
+    TaskCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - name
+      - description
+      - goal
+      - periodicity
+      - points
+      - audience
+      - rewards
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+        goal: *id013
+        periodicity: &id014
+          type: string
+          enum:
+          - Day
+          - Month
+          - Quarter
+          - HalfYear
+          - Year
+        points: &id015
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000
+        audience: *id011
+        rewards: &id016
+          type: array
+          items: &id027
+            $ref: '#/components/schemas/ResourceAmount'
+      description: Ресурс не повторяется; каждый выбран в кампании и доступен при новой настройке. rewards=[] разрешён.
+    TaskPatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        code: *id008
+        name: *id006
+        description: *id009
+        goal: *id013
+        periodicity: *id014
+        points: *id015
+        audience: *id011
+        rewards: *id016
+        status:
+          type: string
+          enum:
+          - Archived
+      description: После публикации только name/description/audience и архив; остальные изменения — 409. Список
+        rewards заменяется целиком и не содержит повторяющихся resourceId.
+      minProperties: 1
+    TaskDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - campaignId
+      - streamId
+      - code
+      - name
+      - description
+      - goal
+      - periodicity
+      - points
+      - audience
+      - rewards
+      - status
+      properties:
+        id: *id002
+        campaignId: *id002
+        streamId: *id002
+        code: *id007
+        name: *id006
+        description: *id009
+        goal: *id013
+        periodicity: *id014
+        points: *id015
+        audience: *id011
+        rewards: *id016
+        status:
+          type: string
+          enum:
+          - Active
+          - Archived
+    MilestoneCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - threshold
+      - achievementId
+      properties: &id017
+        threshold: &id018
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9223372036854775807
+        achievementId: *id002
+    MilestonePatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: *id017
+      description: Изменение только в Draft. threshold — положительное целое Int64.
+      minProperties: 1
+    MilestoneDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - campaignId
+      - streamId
+      - threshold
+      - achievementId
+      properties:
+        id: *id002
+        campaignId: *id002
+        streamId: *id002
+        threshold: *id018
+        achievementId: *id002
+    ChallengeCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - startsAt
+      - endsAt
+      properties: &id019
+        startsAt: *id001
+        endsAt: *id001
+      description: startsAt<endsAt, [start,end) внутри кампании. Стрим задаётся путём; только Draft.
+    ChallengePatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: *id019
+      description: Только до публикации кампании.
+      minProperties: 1
+    ChallengeDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - campaignId
+      - streamId
+      - startsAt
+      - endsAt
+      properties:
+        id: *id002
+        campaignId: *id002
+        streamId: *id002
+        startsAt: *id001
+        endsAt: *id001
+    PurchaseSystemCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - resourceIds
+      properties:
+        name: *id006
+        resourceIds:
+          type: array
+          items: *id002
+          uniqueItems: true
+    PurchaseSystemPatch:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        name: *id006
+        resourceIds:
+          type: array
+          items: *id002
+          uniqueItems: true
+      minProperties: 1
+    PurchaseSystemDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - resourceIds
+      properties:
+        id: *id002
+        name: *id006
+        resourceIds:
+          type: array
+          items: *id002
+          uniqueItems: true
+    IntegrationGrantCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - serviceSubject
+      - kind
+      - campaignId
+      - purchaseSystemId
+      - resourceIds
+      properties:
+        serviceSubject: &id020
+          type: string
+          minLength: 1
+        kind: &id021
+          type: string
+          enum:
+          - Progress
+          - ManualReward
+          - Spend
+        campaignId: &id022
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        purchaseSystemId: &id023
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        resourceIds: &id024
+          type: array
+          items: *id002
+          uniqueItems: true
+      description: 'Progress: campaignId, purchaseSystemId=null, resourceIds=[]. ManualReward: campaignId, purchaseSystemId=null,
+        непустые ресурсы кампании. Spend: campaignId=null, purchaseSystemId, непустые принимаемые ресурсы. Только
+        service subject.'
+    IntegrationGrantPatch:
+      type: object
+      additionalProperties: false
+      required:
+      - resourceIds
+      properties:
+        resourceIds:
+          type: array
+          items: *id002
+          uniqueItems: true
+      description: Полная замена разрешённых ресурсов ManualReward/Spend; пустой набор равен отсутствию разрешённых
+        ресурсов. Для Progress ресурсные позиции запрещены. Scope и serviceSubject не меняются; другое разрешение
+        создаётся отдельно.
+      minProperties: 1
+    IntegrationGrantDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - serviceSubject
+      - kind
+      - campaignId
+      - purchaseSystemId
+      - resourceIds
+      - revoked
+      properties:
+        id: *id002
+        serviceSubject: *id020
+        kind: *id021
+        campaignId: *id022
+        purchaseSystemId: *id023
+        resourceIds: *id024
+        revoked: *id005
+    BudgetDto:
+      type: object
+      additionalProperties: false
+      required:
+      - campaignId
+      - resourceId
+      - allocated
+      - credited
+      - returned
+      - available
+      properties:
+        campaignId: *id002
+        resourceId: *id002
+        allocated: &id025
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9223372036854775807
+        credited: *id025
+        returned: *id025
+        available: &id028
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000000000
+      description: available=allocated-credited+returned. Накопительные итоги Int64; только available ограничен
+        10^15.
+    AllocationCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - operationNumber
+      - resourceId
+      - amount
+      - basis
+      properties:
+        operationNumber: &id026
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: ^[\x00-\x7F]{1,100}$
+          description: Точная ASCII-строка; регистр, пробелы и экранированные символы значимы. Нормализация запрещена.
+        resourceId: *id002
+        amount: *id013
+        basis:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+    ManualRewardCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - operationNumber
+      - masterId
+      - resourceId
+      - amount
+      - basis
+      properties:
+        operationNumber: *id026
+        masterId: *id003
+        resourceId: *id002
+        amount: *id013
+        basis:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    SpendCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - operationNumber
+      - resourceId
+      - amount
+      - purchaseSystemId
+      - basis
+      properties:
+        operationNumber: *id026
+        resourceId: *id002
+        amount: *id013
+        purchaseSystemId: *id002
+        basis:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+    ReversalCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - operationNumber
+      - reason
+      properties:
+        operationNumber: *id026
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      description: Полная отмена исходного ManualCredit/TaskReward/Spend. Сумму, кошелёк или ресурсы менять нельзя.
+        Отмена отмены/выделения бюджета — 400 без занятия номера.
+    OperationDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - companyId
+      - kind
+      - status
+      - initiator
+      - operationNumber
+      - eventId
+      - masterId
+      - campaignId
+      - purchaseSystemId
+      - originalOperationId
+      - amounts
+      - createdAtUtc
+      - basis
+      - declineCode
+      properties:
+        id: *id002
+        companyId: *id002
+        kind:
+          type: string
+          enum:
+          - BudgetAllocation
+          - ManualCredit
+          - TaskReward
+          - Spend
+          - Reversal
+        status:
+          type: string
+          enum:
+          - Posted
+          - Declined
+        initiator: &id029
+          $ref: '#/components/schemas/ActorDto'
+        operationNumber:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 100
+            pattern: ^[\x00-\x7F]{1,100}$
+            description: Точная ASCII-строка; регистр, пробелы и экранированные символы значимы. Нормализация запрещена.
+          - type: 'null'
+        eventId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        masterId:
+          anyOf:
+          - type: integer
+            format: int32
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        campaignId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        purchaseSystemId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        originalOperationId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        amounts:
+          type: array
+          items: *id027
+        createdAtUtc: *id001
+        basis:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+        declineCode:
+          anyOf:
+          - type: string
+            enum:
+            - InsufficientBudget
+            - InsufficientBalance
+            - ResourceUnavailable
+            - CampaignUnavailable
+            - RecipientOutsideAudience
+            - OriginalNotPosted
+            - AlreadyReversed
+          - type: 'null'
+      description: 'Неизменяемый результат. Posted и Declined имеют эту же схему/201; nullable-поля присутствуют.
+        У TaskReward нет operationNumber, есть eventId; у выделения masterId=null; у отмены суммы оригинала положительны,
+        знак задают движения. basis для отмены — reason. У отказа OriginalNotPosted/AlreadyReversed amounts копирует
+        оригинал. У Posted declineCode=null. Никаких изменений оригинала после отмены: читать коллекцию reversals.'
+    WalletDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - companyId
+      - masterId
+      properties:
+        id: *id002
+        companyId: *id002
+        masterId: *id003
+    BalanceDto:
+      type: object
+      additionalProperties: false
+      required:
+      - resourceId
+      - resourceCode
+      - resourceStatus
+      - balance
+      properties:
+        resourceId: *id002
+        resourceCode: *id007
+        resourceStatus:
+          type: string
+          enum:
+          - Active
+          - Archived
+        balance: *id028
+    MovementDto:
+      type: object
+      additionalProperties: false
+      required:
+      - operationId
+      - masterId
+      - resourceId
+      - resourceCode
+      - amount
+      - kind
+      - campaignId
+      - originalOperationId
+      - createdAtUtc
+      properties:
+        operationId: *id002
+        masterId: *id003
+        resourceId: *id002
+        resourceCode: *id007
+        amount:
+          type: integer
+          format: int64
+          minimum: -1000000000
+          maximum: 1000000000
+        kind:
+          type: string
+          enum:
+          - ManualCredit
+          - TaskReward
+          - Spend
+          - Reversal
+        campaignId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        originalOperationId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        createdAtUtc: *id001
+      description: Только проведённое движение кошелька; amount не равен нулю. BudgetAllocation сюда не попадает.
+    ProgressEventCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - eventNumber
+      - masterId
+      - taskId
+      - delta
+      properties:
+        eventNumber: *id026
+        masterId: *id003
+        taskId: *id002
+        delta: *id013
+      description: Только service с Progress grant соответствующей кампании. companyId/subject/время берутся системой;
+        клиент их не подменяет.
+    ProgressEventDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - companyId
+      - eventNumber
+      - initiator
+      - masterId
+      - campaignId
+      - streamId
+      - taskId
+      - acceptedAtUtc
+      - periodStart
+      - periodEnd
+      - requestedDelta
+      - creditedDelta
+      - progressAfter
+      - completionId
+      - pointsAdded
+      - achievementAwardIds
+      - rewardDecision
+      properties:
+        id: *id002
+        companyId: *id002
+        eventNumber: *id026
+        initiator: *id029
+        masterId: *id003
+        campaignId: *id002
+        streamId: *id002
+        taskId: *id002
+        acceptedAtUtc: *id001
+        periodStart: *id001
+        periodEnd: *id001
+        requestedDelta: *id013
+        creditedDelta:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000000
+        progressAfter: *id015
+        completionId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        pointsAdded: *id015
+        achievementAwardIds:
+          type: array
+          items: *id002
+        rewardDecision:
+          anyOf:
+          - $ref: '#/components/schemas/RewardDecisionDto'
+          - type: 'null'
+      description: Точный исход события, включая acceptedAt. completionId/rewardDecision заполнены только событием
+        первого завершения; у следующего уникального события creditedDelta=0, pointsAdded=0, achievementAwardIds=[],
+        completionId/rewardDecision=null.
+    TaskResultDto:
+      type: object
+      additionalProperties: false
+      required:
+      - masterId
+      - campaignId
+      - streamId
+      - taskId
+      - periodStart
+      - periodEnd
+      - goal
+      - progress
+      - completionId
+      - rewardDecision
+      properties:
+        masterId: *id003
+        campaignId: *id002
+        streamId: *id002
+        taskId: *id002
+        periodStart: *id001
+        periodEnd: *id001
+        goal: *id013
+        progress: *id015
+        completionId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        rewardDecision:
+          anyOf:
+          - $ref: '#/components/schemas/RewardDecisionDto'
+          - type: 'null'
+      description: Текущие значения периода; отсутствие строки означает прогресс 0 по известному заданию, а не невидимость
+        собственной истории.
+    StreamResultDto:
+      type: object
+      additionalProperties: false
+      required:
+      - masterId
+      - campaignId
+      - streamId
+      - season
+      - points
+      properties:
+        masterId: *id003
+        campaignId: *id002
+        streamId: *id002
+        season:
+          type: integer
+        points: *id025
+    AchievementAwardDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - masterId
+      - achievementId
+      - season
+      - campaignId
+      - streamId
+      - completionId
+      - awardedAtUtc
+      properties:
+        id: *id002
+        masterId: *id003
+        achievementId: *id002
+        season:
+          type: integer
+        campaignId: *id002
+        streamId: *id002
+        completionId: *id002
+        awardedAtUtc: *id001
+    LeaderboardEntry:
+      type: object
+      additionalProperties: false
+      required:
+      - masterId
+      - score
+      - rank
+      properties:
+        masterId: *id003
+        score: *id025
+        rank:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9223372036854775807
+      description: Только эти три поля; rank=1+число участников со строго большим score. Порядок score DESC, masterId
+        ASC.
+    LeaderboardDto:
+      type: object
+      additionalProperties: false
+      required:
+      - challengeId
+      - state
+      - asOf
+      - items
+      properties:
+        challengeId: *id002
+        state:
+          type: string
+          enum:
+          - Live
+          - Final
+        asOf: *id001
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+      description: 'Исключение из обычной пагинации: top N, default 50/max 100; без продолжения. В первые секунды
+        финализации возможен Live; при исправных зависимостях Final не позже end+5 секунд.'
+    OwnPositionDto:
+      type: object
+      additionalProperties: false
+      required:
+      - challengeId
+      - state
+      - asOf
+      - position
+      properties:
+        challengeId: *id002
+        state:
+          type: string
+          enum:
+          - Live
+          - Final
+        asOf: *id001
+        position:
+          anyOf:
+          - $ref: '#/components/schemas/LeaderboardEntry'
+          - type: 'null'
+      description: Нет собственной строки — position=null; форма ответа та же. После сезона отсутствие строки означает
+        отсутствие права и 403, а не этот ответ.
+    ExportCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - scope
+      - masterId
+      - from
+      - to
+      - resourceId
+      properties:
+        scope:
+          type: string
+          enum:
+          - Employee
+          - Company
+        masterId:
+          anyOf:
+          - type: integer
+            format: int32
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        from: *id001
+        to: *id001
+        resourceId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+      description: 'Employee: masterId обязателен и для Employee совпадает с JWT; Company: только Admin и masterId=null.
+        resourceId=null означает все, включая архивные. from<to, движения отбираются [from,to).'
+    ExportDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - companyId
+      - requester
+      - scope
+      - masterId
+      - from
+      - to
+      - resourceId
+      - state
+      - createdAtUtc
+      - snapshotAtUtc
+      - rowCount
+      - readyAtUtc
+      - deletedAtUtc
+      - sha256
+      - errorCode
+      properties:
+        id: *id002
+        companyId: *id002
+        requester: *id029
+        scope:
+          type: string
+          enum:
+          - Employee
+          - Company
+        masterId:
+          anyOf:
+          - type: integer
+            format: int32
+            minimum: 1
+            maximum: 2147483647
+          - type: 'null'
+        from: *id001
+        to: *id001
+        resourceId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        state:
+          type: string
+          enum:
+          - Pending
+          - Processing
+          - Ready
+          - Error
+          - Deleted
+        createdAtUtc: *id001
+        snapshotAtUtc:
+          anyOf:
+          - type: string
+            format: date-time
+            pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?(Z|[+-]\d{2}:\d{2})$
+            description: RFC 3339 с обязательным offset; точность до 100 нс, без округления. В ответе UTC Z.
+          - type: 'null'
+        rowCount:
+          anyOf:
+          - type: integer
+            format: int64
+            minimum: 0
+            maximum: 9223372036854775807
+          - type: 'null'
+        readyAtUtc:
+          anyOf:
+          - type: string
+            format: date-time
+            pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?(Z|[+-]\d{2}:\d{2})$
+            description: RFC 3339 с обязательным offset; точность до 100 нс, без округления. В ответе UTC Z.
+          - type: 'null'
+        deletedAtUtc:
+          anyOf:
+          - type: string
+            format: date-time
+            pattern: ^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?(Z|[+-]\d{2}:\d{2})$
+            description: RFC 3339 с обязательным offset; точность до 100 нс, без округления. В ответе UTC Z.
+          - type: 'null'
+        sha256:
+          anyOf:
+          - type: string
+            pattern: ^[a-f0-9]{64}$
+          - type: 'null'
+        errorCode:
+          anyOf:
+          - type: string
+            enum:
+            - StorageUnavailable
+            - SnapshotUnavailable
+            - GenerationFailed
+          - type: 'null'
+      description: Поля присутствуют во всех состояниях. Нет object key и URL. snapshotAt/состав фиксируются первым
+        успешным стартом; дальнейшие попытки их не меняют. GET удалённого запроса возвращает Deleted только заказчику
+        с текущими правами.
+    DownloadLinkDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - exportId
+      - url
+      - createdAtUtc
+      - expiresAtUtc
+      properties:
+        id: *id002
+        exportId: *id002
+        url:
+          type: string
+          format: uri
+        createdAtUtc: *id001
+        expiresAtUtc: *id001
+      description: Приватный S3, подписанный GET на неизменяемый CSV, expiresAt-createdAt<=60 секунд. Повтор Idempotency-Key
+        возвращает тот же URL, даже истёкший; новый key создаёт новую ссылку. После удаления экспорта POST/replay/GET
+        ссылки — 409 после проверки прав. URL не логируется.
+    DownloadLinkCreate:
+      type: object
+      additionalProperties: false
+      required: []
+      properties: {}
+      description: 'Пустой JSON-объект; срок определяет сервер: 60 секунд. Заказчик не передаёт bucket/key или TTL.'
+    AuditChange:
+      type: object
+      additionalProperties: false
+      required:
+      - field
+      - before
+      - after
+      properties:
+        field:
+          type: string
+        before:
+          anyOf:
+          - type: string
+          - type: 'null'
+        after:
+          anyOf:
+          - type: string
+          - type: 'null'
+      description: Типизированный список изменений, не произвольный JSON. Множества сериализованы канонически в
+        строку; секретов нет.
+    AuditRecordDto:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - initiator
+      - createdAtUtc
+      - category
+      - targetId
+      - campaignId
+      - changes
+      properties:
+        id: *id002
+        initiator: *id029
+        createdAtUtc: *id001
+        category:
+          type: string
+          enum:
+          - Employee
+          - Resource
+          - Campaign
+          - Stream
+          - Task
+          - Milestone
+          - Challenge
+          - Achievement
+          - PurchaseSystem
+          - IntegrationGrant
+          - Budget
+          - Export
+        targetId:
+          type: string
+        campaignId:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditChange'
+    HealthDto:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - Healthy
+          - Unavailable
+    EmployeePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    ResourcePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    AchievementPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AchievementDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    PurchaseSystemPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseSystemDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    CampaignPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    StreamPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StreamDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    TaskPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    MilestonePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MilestoneDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    ChallengePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChallengeDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    IntegrationGrantPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrationGrantDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    BudgetPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BudgetDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    OperationPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    BalancePage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BalanceDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    MovementPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MovementDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    ProgressEventPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgressEventDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    TaskResultPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskResultDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    StreamResultPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StreamResultDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    AchievementAwardPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AchievementAwardDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    ExportPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+    AuditRecordPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditRecordDto'
+        nextCursor:
+          anyOf:
+          - type: string
+          - type: 'null'
