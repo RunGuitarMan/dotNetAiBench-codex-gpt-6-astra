@@ -56,7 +56,7 @@ paths:
       summary: Создание Employee
       description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
         до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
-        /employees/{masterId}.'
+        /api/v1/employees/{masterId}.'
       tags:
       - employees
       x-b-rules:
@@ -221,7 +221,7 @@ paths:
       summary: Создание Resource
       description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
         до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
-        /resources/{id}.'
+        /api/v1/resources/{resourceId}.'
       tags:
       - resources
       x-b-rules:
@@ -385,7 +385,7 @@ paths:
       summary: Создание Achievement
       description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
         до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
-        /achievements/{id}.'
+        /api/v1/achievements/{achievementId}.'
       tags:
       - achievements
       x-b-rules:
@@ -549,7 +549,7 @@ paths:
       summary: Создание PurchaseSystem
       description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
         до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
-        /purchase-systems/{id}.'
+        /api/v1/purchase-systems/{purchaseSystemId}.'
       tags:
       - purchase-systems
       x-b-rules:
@@ -720,7 +720,7 @@ paths:
       summary: Черновик кампании
       description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
         до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
-        /campaigns/{campaignId}.'
+        /api/v1/campaigns/{campaignId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -934,7 +934,7 @@ paths:
       summary: Создание Stream
       description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
         кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
-        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}.'
+        исходную 201 и представление, GET — текущее. Location: /api/v1/campaigns/{campaignId}/streams/{streamId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -1146,7 +1146,7 @@ paths:
       summary: Создание Task
       description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
         кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
-        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}/tasks/{taskId}.'
+        исходную 201 и представление, GET — текущее. Location: /api/v1/campaigns/{campaignId}/streams/{streamId}/tasks/{taskId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -1369,7 +1369,7 @@ paths:
       summary: Создание Milestone
       description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
         кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
-        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}/milestones/{milestoneId}.'
+        исходную 201 и представление, GET — текущее. Location: /api/v1/campaigns/{campaignId}/streams/{streamId}/milestones/{milestoneId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -1588,7 +1588,7 @@ paths:
       summary: Создание Challenge
       description: 'Права: текущий активный владелец этой кампании или активный Admin своей компании. Только Draft
         кампании. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
-        исходную 201 и представление, GET — текущее. Location: /campaigns/{campaignId}/streams/{streamId}/challenges/{challengeId}.'
+        исходную 201 и представление, GET — текущее. Location: /api/v1/campaigns/{campaignId}/streams/{streamId}/challenges/{challengeId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -1798,7 +1798,7 @@ paths:
       summary: Новое разрешение
       description: 'Права: активный пользователь Admin своей компании.  Требуется Idempotency-Key; текущая авторизация
         до сохранённого ответа; успешный replay возвращает исходную 201 и представление, GET — текущее. Location:
-        /integration-grants/{grantId}.'
+        /api/v1/integration-grants/{grantId}.'
       tags:
       - integration-grants
       x-b-rules:
@@ -2068,7 +2068,7 @@ paths:
         включая будущее/до старта. Архив ресурса или недействующее состояние/время кампании — сохранённый Declined.
         Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала проверяет текущие права/активность,
         затем исходный результат; не переигрывает изменившиеся условия. Смена существенных данных — 409. Location:
-        /operations/{operationId}.'
+        /api/v1/operations/{operationId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -2116,7 +2116,7 @@ paths:
         выполнение не требуется, аудитория задания не проверяется. Кампания Published в [start,end). При текущих
         правах бизнес-непригодность аудитории/срока сохраняется как Declined. Бессрочный номер B16/B24, технический
         Idempotency-Key не требуется. Повтор сначала проверяет текущие права/активность, затем исходный результат;
-        не переигрывает изменившиеся условия. Смена существенных данных — 409. Location: /operations/{operationId}.'
+        не переигрывает изменившиеся условия. Смена существенных данных — 409. Location: /api/v1/operations/{operationId}.'
       tags:
       - campaigns
       x-b-rules:
@@ -2318,7 +2318,7 @@ paths:
         принимает ресурс. Нехватка — Declined/InsufficientBalance, архив — Declined/ResourceUnavailable; отдельного
         согласия нет. Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала проверяет
         текущие права/активность, затем исходный результат; не переигрывает изменившиеся условия. Смена существенных
-        данных — 409. Location: /operations/{operationId}.'
+        данных — 409. Location: /api/v1/operations/{operationId}.'
       tags:
       - wallets
       x-b-rules:
@@ -2485,10 +2485,10 @@ paths:
         действующим Spend grant той же системы/ресурса; заблокированный получатель: только Admin. Запрет сотруднику,
         частичной отмене, отмене отмены/выделения. Непроведённый допустимый оригинал — Declined/OriginalNotPosted,
         повторная отмена — Declined/AlreadyReversed, недостаток одного баланса пакета — Declined/InsufficientBalance.
-        Новый номер после неудачи допустим. Архив и конец сезона не препятствуют. Location содержит ID новой операции
-        отмены, не ID оригинала. Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала
+        Новый номер после неудачи допустим. Архив и конец сезона не препятствуют. operationId в Location — ID новой
+        операции отмены из результата Posted или Declined, не operationId оригинала из URL запроса. Бессрочный номер B16/B24, технический Idempotency-Key не требуется. Повтор сначала
         проверяет текущие права/активность, затем исходный результат; не переигрывает изменившиеся условия. Смена
-        существенных данных — 409. Location: /operations/{operationId}.'
+        существенных данных — 409. Location: /api/v1/operations/{operationId}.'
       tags:
       - operations
       x-b-rules:
@@ -2580,7 +2580,7 @@ paths:
         201 и rewardDecision=Declined. Непринятое событие номер не занимает. На replay активность получателя/grant
         проверяются, аудитория/период/архив заново не вычисляются. Бессрочный номер B16/B24, технический Idempotency-Key
         не требуется. Повтор сначала проверяет текущие права/активность, затем исходный результат; не переигрывает
-        изменившиеся условия. Смена существенных данных — 409. Location: /progress-events/{eventId}.'
+        изменившиеся условия. Смена существенных данных — 409. Location: /api/v1/progress-events/{eventId}.'
       tags:
       - progress-events
       x-b-rules:
@@ -3168,7 +3168,7 @@ paths:
       description: 'Права: активный сотрудник: своя; активный Admin: сотрудник своей компании или компания. Создаёт
         Pending и durable job одной транзакцией; состав ещё не фиксируется. Владелец по роли не заказывает чужую
         выписку. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный replay возвращает
-        исходную 201 и представление, GET — текущее. Location: /exports/{exportId}.'
+        исходную 201 и представление, GET — текущее. Location: /api/v1/exports/{exportId}.'
       tags:
       - exports
       x-b-rules:
@@ -3322,7 +3322,7 @@ paths:
         scope; активный профиль для user; другой Admin не является заказчиком. Только Ready; иначе 409/ExportNotReady.
         Deleted проверяется после доступа, до idempotency replay: 409/ExportDeleted. URL подписан на 60 секунд,
         тот же key не продлевает срок. Требуется Idempotency-Key; текущая авторизация до сохранённого ответа; успешный
-        replay возвращает исходную 201 и представление, GET — текущее. Location: /exports/{exportId}/download-links/{linkId}.'
+        replay возвращает исходную 201 и представление, GET — текущее. Location: /api/v1/exports/{exportId}/download-links/{linkId}.'
       tags:
       - exports
       x-b-rules:
@@ -3656,7 +3656,11 @@ components:
         чужой кошелёк/история — 404.
   headers:
     Location:
-      description: Канонический URI созданного ресурса; в том числе для сохранённого Declined. При replay тот же.
+      description: Канонический путь от корня хоста /api/v1/... к конкретному созданному ресурсу, включая сохранённый
+        Declined. Идентификаторы берутся из созданного результата и соответствуют параметрам его GET-маршрута;
+        в заголовке стоят значения, а не placeholders. BusinessRequest/IdempotentRequest сохраняет этот исходный
+        Location вместе с ID/201/DTO; replay после текущей авторизации возвращает тот же Location. Это URI ресурса
+        API, а не S3 download URL; префикс /api/v1 указан один раз, ключи paths остаются без него.
       schema:
         type: string
     ETag:
